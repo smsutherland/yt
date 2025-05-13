@@ -111,3 +111,17 @@ def test_cosmo_dataset_selection():
     ds = load(EAGLE_6)
     psc = ParticleSelectionComparison(ds)
     psc.run_defaults()
+
+
+@requires_module("h5py")
+@requires_file(EAGLE_6)
+def test_units():
+    """
+    Currently only tests the units of temperature, but I've left the name vague to give room for future testing of units to go here.
+    The SWIFT frontend is far from perfect, so I could
+    """
+    ds = load(EAGLE_6)
+
+    field = ("gas", "temperature")
+    field_info = ds._get_field_info(field)
+    assert field_info.units == "K"
