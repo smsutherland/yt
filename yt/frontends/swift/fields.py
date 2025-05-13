@@ -10,6 +10,7 @@ class SwiftFieldInfo(SPHFieldInfo):
             ),
             ("Densities", ("code_mass / code_length**3", ["density"], None)),
             ("SmoothingLengths", ("code_length", ["smoothing_length"], None)),
+            ("Temperatures", ("code_temperature", ["temperature"], None)),
         )
         super().__init__(ds, field_list, slice_info)
 
@@ -20,8 +21,5 @@ class SwiftFieldInfo(SPHFieldInfo):
             self.setup_gas_particle_fields(ptype)
 
     def setup_gas_particle_fields(self, ptype):
-        self.alias((ptype, "temperature"), (ptype, "Temperatures"))
-        self.alias(("gas", "temperature"), (ptype, "Temperatures"))
-
         for ax in ("x", "y", "z"):
             self.alias((ptype, ax), (ptype, "particle_position_" + ax))
