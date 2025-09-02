@@ -10,6 +10,7 @@ class SwiftFieldInfo(SPHFieldInfo):
             ),
             ("Densities", ("code_mass / code_length**3", ["density"], None)),
             ("SmoothingLengths", ("code_length", ["smoothing_length"], None)),
+            ("DynamicalMasses", ("code_mass", ["particle_mass"], None)),
         )
         super().__init__(ds, field_list, slice_info)
 
