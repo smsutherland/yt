@@ -120,13 +120,13 @@ class SwiftDataset(SPHDataset):
         self.domain_right_edge = header["BoxSize"]
         self.domain_left_edge = np.zeros_like(self.domain_right_edge)
 
-        self.dimensionality = int(header["Dimension"])
+        self.dimensionality = _to_scalar(header["Dimension"], int)
 
         # SWIFT is either all periodic, or not periodic at all
         if has_runtime_pars:
-            periodic = int(runtime_parameters["PeriodicBoundariesOn"])
+            periodic = _to_scalar(runtime_parameters["PeriodicBoundariesOn"], int)
         else:
-            periodic = int(parameters["InitialConditions:periodic"])
+            periodic = _to_scalar(parameters["InitialConditions:periodic"], int)
 
         if periodic:
             self._periodicity = [True] * self.dimensionality
@@ -134,26 +134,32 @@ class SwiftDataset(SPHDataset):
             self._periodicity = [False] * self.dimensionality
 
         # Units get attached to this
-        self.current_time = float(header["Time"])
+        self.current_time = _to_scalar(header["Time"], float)
 
         # Now cosmology enters the fray, as a runtime parameter.
-        self.cosmological_simulation = int(policy["cosmological integration"])
+        self.cosmological_simulation = _to_scalar(
+            policy["cosmological integration"], int
+        )
 
         if self.cosmological_simulation:
             try:
-                self.current_redshift = float(header["Redshift"])
+                self.current_redshift = _to_scalar(header["Redshift"], float)
                 # These won't be present if self.cosmological_simulation is false
-                self.omega_lambda = float(parameters["Cosmology:Omega_lambda"])
+                self.omega_lambda = _to_scalar(
+                    parameters["Cosmology:Omega_lambda"], float
+                )
                 # Cosmology:Omega_m parameter deprecated at SWIFT commit d2783c2
                 # Between SWIFT versions 0.9.0 and 1.0.0
                 if "Cosmology:Omega_cdm" in parameters:
-                    self.omega_matter = float(parameters["Cosmology:Omega_b"]) + float(
-                        parameters["Cosmology:Omega_cdm"]
-                    )
+                    self.omega_matter = _to_scalar(
+                        parameters["Cosmology:Omega_b"], float
+                    ) + _to_scalar(parameters["Cosmology:Omega_cdm"], float)
                 else:
-                    self.omega_matter = float(parameters["Cosmology:Omega_m"])
+                    self.omega_matter = _to_scalar(
+                        parameters["Cosmology:Omega_m"], float
+                    )
                 # This is "little h"
-                self.hubble_constant = float(parameters["Cosmology:h"])
+                self.hubble_constant = _to_scalar(parameters["Cosmology:h"], float)
             except KeyError:
                 mylog.warning(
                     "Could not find cosmology information in Parameters, "
@@ -209,3 +215,19 @@ class SwiftDataset(SPHDataset):
             valid = False
 
         return valid
+
+
+def _to_scalar(value, ty):
+    """
+    Checks if the value is a scalar via np.isscalar.
+    If so, return the value as type `ty`.
+    If not, it should be an ndarray of size 1.
+    Get the one element and return it as type `ty`.
+
+    Most hdf5 attributes in SWIFT are arrays, even though they have a single scalar value.
+    This function coerces the arrays into scalars, while allowing for cases where the value is already a scalar.
+    """
+    if np.isscalar(value):
+        return ty(value)
+    else:
+        return ty(value.item())
